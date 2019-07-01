@@ -84,7 +84,7 @@ def main():
         total_G_adversarial_loss = 0
         total_G_loss = 0
         total_D_loss = 0
-        for realX, targetY in tqdm_notebook(train_dataloader):
+        for realX, targetY in tqdm(train_dataloader):
             batch_size = realX.size()[0]
             
             realX = Variable(realX).type(dtype)
