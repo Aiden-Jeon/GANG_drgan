@@ -28,22 +28,28 @@ def main():
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     checkpoint_path = args.save_dir
 
-    G = Generator(64, dtype)
-    D = Discriminator(64, dtype)
-    feature_extractor = FeatureExtractor(models.vgg19(pretrained=True), dtype)  
+    G = Generator(64)
+    D = Discriminator(64)
+    feature_extractor = FeatureExtractor(models.vgg19(pretrained=True))  
+    G.to(device)
+    D.to(device)
+    feature_extractor.to(device)
 
-    bce_loss = nn.BCELoss().type(dtype)
-    mse_loss = nn.MSELoss().type(dtype)
-    l1_loss = nn.L1Loss().type(dtype)
+    bce_loss = nn.BCELoss().to(device)
+    mse_loss = nn.MSELoss().to(device)
+    l1_loss = nn.L1Loss().to(device)
+
     G_optimizer = optim.Adam(G.parameters(), lr=0.0001, betas=(0.5, 0.9))
     D_optimizer = optim.Adam(D.parameters(), lr=0.0001, betas=(0.5, 0.9))
 
     for valid_realX, valid_fakeY in valid_dataloader:
-        valid_realX = Variable(valid_realX).type(dtype)
-        valid_fakeY = Variable(valid_fakeY).type(dtype)
+        valid_realX = Variable(valid_realX).to(device)
+        valid_fakeY = Variable(valid_fakeY).to(device)
         break
+
     with open(checkpoint_path + 'hist.txt', 'w') as f:
         f.write('') 
+
     if args.pretrain :
         for epoch in range(args.pretrain_num_epochs):
             print('Starting epoch %d/%d' %(epoch+1, num_epoch))
@@ -52,8 +58,8 @@ def main():
             for realX, targetY in tqdm(train_dataloader):
                 batch_size = realX.size()[0]
                 
-                realX = Variable(realX).type(dtype)
-                targetY = Variable(targetY).type(dtype)
+                realX = Variable(realX).to(device)
+                targetY = Variable(targetY).to(device)
                 fakeX = G(realX)
                 G.zero_grad()
 
@@ -87,16 +93,16 @@ def main():
         for realX, targetY in tqdm(train_dataloader):
             batch_size = realX.size()[0]
             
-            realX = Variable(realX).type(dtype)
-            targetY = Variable(targetY).type(dtype)
+            realX = Variable(realX).to(device)
+            targetY = Variable(targetY).to(device)
             
             ### Train Discriminator
             # label smoothing
-            target_real = Variable(torch.rand(batch_size,1)*0.5 + 0.7).type(dtype)
-            target_fake = Variable(torch.rand(batch_size,1)*0.3).type(dtype)
+            target_real = Variable(torch.rand(batch_size,1)*0.5 + 0.7).to(device)
+            target_fake = Variable(torch.rand(batch_size,1)*0.3).to(device)
             
             # by WGAN train D 10 times
-            fakeX = Variable(G(realX))
+            fakeX = Variable(G(realX)).to(device)
             for _ in range(10):
                 D.zero_grad()
                 target_result = D(targetY).squeeze().view(-1,1)
@@ -127,7 +133,7 @@ def main():
             fake_high_features = fake_features.relu_5_2
             
             G_content_loss = 0.2*mse_loss(fake_low_features, target_low_features) + 0.8*mse_loss(fake_high_features, target_high_features)
-            G_adversarial_loss = bce_loss(D(fakeX).squeeze().view(-1,1), Variable(torch.ones(batch_size, 1)).type(dtype))
+            G_adversarial_loss = bce_loss(D(fakeX).squeeze().view(-1,1), Variable(torch.ones(batch_size, 1)).to(device))
             G_loss = 20*G_content_loss + G_adversarial_loss
             
             total_G_content_loss += G_content_loss.cpu().data

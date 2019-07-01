@@ -10,10 +10,10 @@ from torchvision.utils import save_image
 import matplotlib.image as mpimg
 
 class FeatureExtractor(nn.Module):
-    def __init__(self, cnn, dtype):
+    def __init__(self, cnn):
         super(FeatureExtractor, self).__init__()
-        self.slice1 = nn.Sequential(*list(cnn.features.children())[:4]).type(dtype)
-        self.slice2 = nn.Sequential(*list(cnn.features.children())[4:32]).type(dtype)
+        self.slice1 = nn.Sequential(*list(cnn.features.children())[:4])
+        self.slice2 = nn.Sequential(*list(cnn.features.children())[4:32])
 
     def forward(self, x):
         h = self.slice1(x)
