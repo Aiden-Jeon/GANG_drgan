@@ -10,32 +10,27 @@ from models import *
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--save_dir', type=str,
-                help="save directory")
-    parser.add_argument('--load_dir', type=str,
-                help="load file directory")
+    parser.add_argument('--save_dir', type=str, help="save directory")
+    parser.add_argument('--load_dir', type=str, help="load file directory")
     parser.add_argument('--pretrain', action='store_true')
-    parser.add_argument('--pretrain_num', type=int, default=2,
-                help="number of pretrain epoch")
-    parser.add_argument('--num_epoch', type=int, default=500,
-                help="number of epoch to train")
+    parser.add_argument('--pretrain_num_epochs', type=int, default=2)
+    parser.add_argument('--num_epochs', type=int, default=500)
+    parser.add_argument('--save_every', type=int, default=2)
+    parser.add_argument('--train_continue', action='store_true')
     args = parser.parse_args()
 
-    # train_dataset = DistortionDataset('dis/', 'raw/', True)
-    # train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True)
+    train_dataset = DistortionDataset('dis/', 'raw/', True)
+    train_dataloader = DataLoader(train_dataset, batch_size=8, shuffle=True)
 
-    # valid_dataset = DistortionDataset('dis/', 'raw/', False)
-    # valid_dataloader = DataLoader(valid_dataset, batch_size=3, shuffle=True)
+    valid_dataset = DistortionDataset('dis/', 'raw/', False)
+    valid_dataloader = DataLoader(valid_dataset, batch_size=3, shuffle=True)
 
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     checkpoint_path = args.save_dir
-    # checkpoint_path = 'gdrive/My Drive/checkpoint/johnber/'
-
-    
 
     G = Generator(64, dtype)
     D = Discriminator(64, dtype)
-    # feature_extractor = FeatureExtractor(models.vgg19(pretrained=True), dtype)  
+    feature_extractor = FeatureExtractor(models.vgg19(pretrained=True), dtype)  
 
     bce_loss = nn.BCELoss().type(dtype)
     mse_loss = nn.MSELoss().type(dtype)
@@ -50,7 +45,7 @@ def main():
     with open(checkpoint_path + 'hist.txt', 'w') as f:
         f.write('') 
     if args.pretrain :
-        for epoch in range(args.pretrain_num):
+        for epoch in range(args.pretrain_num_epochs):
             print('Starting epoch %d/%d' %(epoch+1, num_epoch))
             total_G_loss = 0
             G.train()
@@ -72,7 +67,7 @@ def main():
     save_every = args.save_every
     start_epoch = 0
 
-    if train_continue:
+    if args.train_continue:
         G_load = torch.load(checkpoint_path + 'G_params.pkl')
         D_load = torch.load(checkpoint_path + 'D_params.pkl')
         G.load_state_dict(G_load['params'])
